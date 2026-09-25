@@ -22,6 +22,16 @@
   .sample-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}.sample-number{font-size:19px;font-weight:800;color:var(--blue)}.sample-tag{font-family:monospace;color:#5e6b76;font-size:13px}
   .field{margin:10px 0 13px}.field-label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:800;margin-bottom:3px}.instruction,.synthesis-text{padding:10px 12px;border-left:3px solid #98bedb;background:var(--soft);white-space:pre-wrap}.instruction-en{margin-top:7px;padding-top:7px;border-top:1px solid #d7e0e7;color:#4e5d68;font-size:13px;line-height:1.5}.synthesis-text{border-left-color:#b5c9a7;background:#f7faf5;font-weight:650}
   .system-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:16px}.ablation-grid{grid-template-columns:repeat(2,minmax(0,240px));max-width:500px}.system-item{border:1px solid #d2d9df;border-radius:5px;padding:10px;background:#fbfcfd}.system-name{min-height:42px;font-size:13px;font-weight:800;line-height:1.35;margin-bottom:7px}audio{width:100%;height:32px}
+  .algorithm-intro{max-width:970px;margin:5px 0 18px;color:#354553;font-size:14px;line-height:1.65}
+  .algorithm-panel{margin:0 0 14px;border-top:2px solid #24313b;border-bottom:2px solid #24313b;background:#fff}
+  .algorithm-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0;padding:9px 0 10px;border-bottom:1px solid #71808b;font:21px/1.4 Georgia,"Times New Roman",serif;color:#111}.algorithm-title strong{font-weight:700}.algorithm-label{display:inline-block;padding:2px 7px;border-radius:2px;background:#e8ecef;color:#4b5963;font:700 12px/1.4 Arial,"Noto Sans CJK SC","Microsoft YaHei",sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+  .algorithm-scroll{overflow-x:auto;overscroll-behavior-x:contain}.algorithm-scroll:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+  .algorithm-lines{width:max-content;min-width:100%;padding:10px 0}
+  .algo-line{display:grid;grid-template-columns:30px 1fr;column-gap:18px;min-height:24px;align-items:baseline;padding-right:12px}
+  .algo-no{color:#7b8791;font:13px/24px "Courier New",monospace;text-align:right;user-select:none}
+  .algo-body{font:14px/24px "Courier New",ui-monospace,monospace;white-space:pre;color:#182632}.algo-comment{color:#367b8e}.algo-keyword{color:#075e9f;font-weight:700}
+  .algorithm-note{font-size:12px;line-height:1.65;color:#475965;margin:10px 0 0}.algorithm-note code,.algorithm-intro code{font-family:"Courier New",monospace;color:#203b50}
+  @media(max-width:600px){.algorithm-title{font-size:18px}.algorithm-intro{font-size:13px}.algo-line{column-gap:12px}.algo-body{font-size:13px}}
   .note{font-size:13px;color:var(--muted);margin-top:20px}.footer{border-top:1px solid #c8d0d7;margin-top:42px;padding-top:14px;text-align:center;color:var(--muted);font-size:12px}
   @media(max-width:900px){.system-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:600px){.page{padding:24px 13px 50px}h1{font-size:24px}.abstract{text-align:left}.system-grid{grid-template-columns:1fr}}
@@ -35,6 +45,47 @@
   <p class="venue">ICASSP 2027 · Chinese voice-design examples</p>
   <h2>Abstract</h2>
   <p class="abstract">Natural-language voice design requires both faithful semantic control and stable speech synthesis, yet existing systems often exhibit semantic drift and synthesis instability. A key limitation is that joint instruction–acoustic conditioning requires scarce annotated instruction–voice pairs, which also prevents effective reuse of large-scale acoustic pre-training. Stable-Timbre addresses this limitation by generating continuous speaker x-vectors from design instructions with a flow-matching policy and passing them to Stable-ALM within a unified x-vector–FSQ framework. CCC first strengthens core-attribute control. Dual-stage GRPO then improves semantic faithfulness with CLAP rewards and speech intelligibility with post-synthesis WER feedback. Ablations verify this progression: CCC improves core-attribute control, CLAP alignment strengthens semantic faithfulness, and synthesis-feedback alignment improves synthesis intelligibility. On the Chinese split of the InstructTTSEval benchmark (ITTS-ZH), Stable-Timbre obtains WER 1.53% versus 3.94% for our controlled instruction-conditioned DeepDub baseline, with an Acoustic-Parameter Specification (APS) score of 89.39 and a naturalness mean opinion score of 4.35.</p>
+  <section id="alignment-algorithm" aria-labelledby="alignment-heading">
+    <h2 id="alignment-heading">Stable-Timbre Alignment</h2>
+    <p class="algorithm-intro"><code>M</code> is the timbre policy initialized after CCC; <code>c</code> is the voice-design instruction and <code>x</code> the synthesis text. The acoustic foundation <code>F</code>, CLAP, and ASR remain frozen throughout both stages.</p>
+    <figure class="algorithm-panel" aria-labelledby="algorithm-title">
+      <figcaption class="algorithm-title" id="algorithm-title"><span class="algorithm-label">Pseudocode</span><strong>Dual-stage timbre alignment with Advantage Weighted Matching</strong></figcaption>
+      <div class="algorithm-scroll" role="region" tabindex="0" aria-label="Stable-Timbre pseudocode; scroll horizontally on small screens">
+        <div class="algorithm-lines">
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">1</span><code class="algo-body"><span class="algo-keyword">for</span> stage <span class="algo-keyword">in</span> {S1, S2}:                       <span class="algo-comment"># S1: CLAP; S2: WER + CLAP</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">2</span><code class="algo-body">    M_ref = freeze(copy(M));  M_old = copy(M) <span class="algo-comment"># initial references</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">3</span><code class="algo-body">    s = sampler(M_old, c)                    <span class="algo-comment"># x-vector samples</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">4</span><code class="algo-body">    <span class="algo-keyword">if</span> stage == S1:</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">5</span><code class="algo-body">        A = cal_adv(CLAP(c, s), c)</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">6</span><code class="algo-body">    else:</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">7</span><code class="algo-body">        y = F(x, s)                         <span class="algo-comment"># frozen acoustic foundation</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">8</span><code class="algo-body">        r_wer = 1 - clip(WER(ASR(y), x), 0, 1)</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">9</span><code class="algo-body">        A = cal_adv(r_wer, c) + λ·cal_adv(CLAP(c, s), c)</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">10</span><code class="algo-body">&#160;</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">11</span><code class="algo-body">    e = randn_like(s)                        <span class="algo-comment"># noise</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">12</span><code class="algo-body">    t = get_timesteps(s)                     <span class="algo-comment"># training timesteps</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">13</span><code class="algo-body">    s_t = fwd_diffusion(s, e, t)             <span class="algo-comment"># noisy x-vector</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">14</span><code class="algo-body">    v = M(s_t, t, c)                          <span class="algo-comment"># velocity / x0 prediction</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">15</span><code class="algo-body">    v_old = M_old(s_t, t, c)</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">16</span><code class="algo-body">    v_ref = M_ref(s_t, t, c)                 <span class="algo-comment"># reference prediction</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">17</span><code class="algo-body">&#160;</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">18</span><code class="algo-body">    log_p = -((v - (e - s))**2).mean()       <span class="algo-comment"># Flow Matching loss</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">19</span><code class="algo-body">    log_p_old = -((v_old - (e - s))**2).mean()</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">20</span><code class="algo-body">    rho = torch.exp(log_p - log_p_old.detach())</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">21</span><code class="algo-body">    L_policy = -mean(A·rho)                   <span class="algo-comment"># policy loss</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">22</span><code class="algo-body">    L_kl = w(t)·((v - v_ref)**2).mean()       <span class="algo-comment"># KL loss</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">23</span><code class="algo-body">    L = L_policy + β·L_kl                    <span class="algo-comment"># total loss</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">24</span><code class="algo-body">    optimizer_step(M, L)                     <span class="algo-comment"># update timbre policy only</span></code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">25</span><code class="algo-body">&#160;</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">26</span><code class="algo-body"><span class="algo-keyword">if</span> stage == S1:  M_ref = freeze(M);  M_old = copy(M)</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">27</span><code class="algo-body">&#160;</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">28</span><code class="algo-body">At inference:  s = sampler(M, c);  z = StableALM(x, Proj(s))</code></div>
+          <div class="algo-line"><span class="algo-no" aria-hidden="true">29</span><code class="algo-body">              y = waveform_decoder(z, s);  <span class="algo-keyword">return</span> y</code></div>
+        </div>
+      </div>
+    </figure>
+    <p class="algorithm-note">Adapted from <a href="https://arxiv.org/pdf/2509.25050#page=6" target="_blank" rel="noopener">AWM, Algorithm 1</a>, using the paper's x₀-prediction surrogate with effective weight 1. <code>group_norm</code> standardizes rewards within each instruction's rollout group; <code>t</code> is sampled from (δ, 1).<br><strong>Inference:</strong> <code>s = sampler(M, c)</code>; <code>y = F(x, s)</code>, with <code>F</code> comprising Stable-ALM and waveform generation.</p>
+  </section>
   <h2>System Comparison</h2>
   <p class="intro">Each demo uses the same voice-design instruction and synthesis text across five systems. Listen for semantic attribute control, speaking style, and synthesis stability.</p>
   <div class="legend"><span>Qwen3TTS-VD · unified instruction-conditioned baseline</span><span>DeepDub · text-to-timbre + instruction-conditioned acoustic TTS</span><span>M0 · FM-only</span><span>M2 · CCC + Stage I</span><span>M3 · full Stable-Timbre</span></div>
